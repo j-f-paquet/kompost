@@ -18,6 +18,8 @@
 
 namespace EventInput {
 
+double Tmunu_norm_factor=1.0;
+
 double afm = 0.08;
 int Ns = 512;
 
@@ -28,6 +30,7 @@ int ySTART = 0;
 int yEND = Ns - 1;
 
 void Setup(INIReader &reader) {
+  Tmunu_norm_factor = reader.GetReal("EventInput", "normFactor", Tmunu_norm_factor);
   afm = reader.GetReal("EventInput", "afm", afm);
   Ns = reader.GetInteger("EventInput", "Ns", Ns);
 
@@ -38,6 +41,7 @@ void Setup(INIReader &reader) {
   yEND = reader.GetInteger("EventInput", "yEND", yEND);
 
   std::cerr << "** EventInput ** Initialized a grid layout:\n" 
+            << "  T^{\\mu\\nu} normalisation factor = " << Tmunu_norm_factor << "\n"
             << "  afm    = " << afm << "\n"
             << "  Ns     = " << Ns << "\n"
             << "  xSTART = " << xSTART << "\n"

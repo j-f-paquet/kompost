@@ -19,6 +19,8 @@ class INIReader;
 
 namespace EventInput {
 
+extern double Tmunu_norm_factor;
+
 extern double afm;
 extern int Ns;
 

@@ -132,6 +132,9 @@ void EnergyMomentumTensorMapLoad(EnergyMomentumTensorMap *TIn, std::string fname
     
     // CONVERT E [GeV/fm^3] TO  E [GeV^4] //
     double ScaleFactor=(M_HBARC*M_HBARC*M_HBARC);
+
+    // NORMALIZE TMUNU IF NEEDED
+    ScaleFactor*=Tmunu_norm_factor;
     
     int InputCount=0;
     bool printfirst=true; 
