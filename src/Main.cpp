@@ -56,8 +56,6 @@ int main(int argc, char **argv) {
   //  Get KoMPoST parameters from input file
   // Smearing width of response functions
   // Hard-coded
-  KoMPoSTParameters::Sigma=0.1/(tOut-tIn);
-  KoMPoSTParameters::Setup(reader);
 
   // SETUP OpenMP
   int NumberOfOpenMPThreads = omp_get_max_threads();
@@ -70,31 +68,54 @@ int main(int argc, char **argv) {
   // LOAD INITIAL ENERGY MOMENTUM TENSOR //
   EnergyMomentumTensorMapLoad(Tmunu_In, InputFile);
 
-  // ALLOCATE FINAL AND BACKGROUND ENERGY-MOMENTUM TENSOR //
-  EnergyMomentumTensorMap *Tmunu_OutFull = new EnergyMomentumTensorMap(tOut);
-  EnergyMomentumTensorMap *Tmunu_OutBG   = new EnergyMomentumTensorMap(tOut);
-
-  // LOAD RESPONSE FUNCTIONS //
-  KoMPoST::Setup() ;
-  // COMPUTE EVOLVE ENERGY-MOMENTUM TENSOR //
-  KoMPoST::Run(Tmunu_In, Tmunu_OutBG, Tmunu_OutFull) ;
-  // END OF KOMPOST EVOLUTION //
-
-  // WRITE OUT EVOLVED ENERGY-MOMENTUM TENSOR //
-  void write_initial_conditions_MUSIC(std::string outfile_name, bool use_sigmamunu_NavierStokes, double dx, double dy, int Nx, int Ny, EnergyMomentumTensorMap *Tmunu_Out_Full, EnergyMomentumTensorMap *Tmunu_Out_BG);
-  std::string tmp = std::string(OutputFileTag) + ".music_init_flowNonLinear_pimunuTransverse.txt";
+  // OUTPUT INITIAL ENERGY DENSITY AND FLOW PROFILE //
+  //std::string tmp_file_name;
   bool use_pimunu_NS=false;
-  write_initial_conditions_MUSIC(tmp, use_pimunu_NS, EventInput::afm, EventInput::afm, EventInput::Ns, EventInput::Ns, Tmunu_OutFull, Tmunu_OutBG);
-  tmp = std::string(OutputFileTag) + ".music_init_flowNonLinear_pimunuTransverse_pimunuNS.txt";
-  use_pimunu_NS=true;
-  write_initial_conditions_MUSIC(tmp, use_pimunu_NS, EventInput::afm, EventInput::afm, EventInput::Ns, EventInput::Ns, Tmunu_OutFull, Tmunu_OutBG);
+  std::stringstream tmp_file_name;
+  tmp_file_name << OutputFileTag << ".tOut" << tIn << ".music_init_flowNonLinear_pimunuTransverse.txt";
+  write_initial_conditions_MUSIC(tmp_file_name.str(), use_pimunu_NS, EventInput::afm, EventInput::afm, EventInput::Ns, EventInput::Ns, Tmunu_In, Tmunu_In);
+
+  const double delta_tau_aim=0.1;
+  const double tau_steps=int((tOut-tIn)/delta_tau_aim)+1;
+  const double delta_tau=(tOut-tIn)/tau_steps;
+  std::cout << "Outputting the energy density & flow every " << delta_tau << " fm\n";
+  // LOOP OVER TIME //
+  for(int itau=1;itau<=tau_steps;itau++) {
+
+          const double tau=tIn+itau*delta_tau;
+
+          KoMPoSTParameters::Sigma=0.1/(tau-tIn);
+          KoMPoSTParameters::Setup(reader);
+
+          // ALLOCATE FINAL AND BACKGROUND ENERGY-MOMENTUM TENSOR //
+          EnergyMomentumTensorMap *Tmunu_OutFull = new EnergyMomentumTensorMap(tau);
+          EnergyMomentumTensorMap *Tmunu_OutBG   = new EnergyMomentumTensorMap(tau);
+
+          // LOAD RESPONSE FUNCTIONS //
+          KoMPoST::Setup() ;
+          // COMPUTE EVOLVE ENERGY-MOMENTUM TENSOR //
+          KoMPoST::Run(Tmunu_In, Tmunu_OutBG, Tmunu_OutFull) ;
+          // END OF KOMPOST EVOLUTION //
+
+          // WRITE OUT EVOLVED ENERGY-MOMENTUM TENSOR //
+          tmp_file_name.str("");
+          //std::iostream 
+          tmp_file_name << OutputFileTag << ".tOut" << tau << ".music_init_flowNonLinear_pimunuTransverse.txt";
+          void write_initial_conditions_MUSIC(std::string outfile_name, bool use_sigmamunu_NavierStokes, double dx, double dy, int Nx, int Ny, EnergyMomentumTensorMap *Tmunu_Out_Full, EnergyMomentumTensorMap *Tmunu_Out_BG);
+          //tmp_file_name = std::string(OutputFileTag) + "tau" + str(tau) + ".music_init_flowNonLinear_pimunuTransverse.txt";
+          //use_pimunu_NS=false;
+          write_initial_conditions_MUSIC(tmp_file_name.str(), use_pimunu_NS, EventInput::afm, EventInput::afm, EventInput::Ns, EventInput::Ns, Tmunu_OutFull, Tmunu_OutBG);
+          //tmp = std::string(OutputFileTag) + ".music_init_flowNonLinear_pimunuTransverse_pimunuNS.txt";
+          //use_pimunu_NS=true;
+          //write_initial_conditions_MUSIC(tmp, use_pimunu_NS, EventInput::afm, EventInput::afm, EventInput::Ns, EventInput::Ns, Tmunu_OutFull, Tmunu_OutBG);
 
 
-  tmp = std::string(OutputFileTag) + ".input.txt";
-  EnergyMomentumTensorMapSave(Tmunu_In, tmp);
-  tmp = std::string(OutputFileTag) + ".txt";
-  EnergyMomentumTensorMapSave(Tmunu_OutFull, tmp);
-  tmp = std::string(OutputFileTag) + ".background.txt";
-  EnergyMomentumTensorMapSave(Tmunu_OutBG, tmp);
+          //tmp = std::string(OutputFileTag) + ".input.txt";
+          //EnergyMomentumTensorMapSave(Tmunu_In, tmp);
+          //tmp = std::string(OutputFileTag) + ".txt";
+          //EnergyMomentumTensorMapSave(Tmunu_OutFull, tmp);
+          //tmp = std::string(OutputFileTag) + ".background.txt";
+          //EnergyMomentumTensorMapSave(Tmunu_OutBG, tmp);
+          }
 
 }
