@@ -106,7 +106,7 @@ for tau in tau_list:
         if (item is None):
             final_array_to_save[key]=array_to_save
         else:
-            final_array_to_save[key]=np.concatenate((final_array_to_save[key],item))
+            final_array_to_save[key]=np.concatenate((final_array_to_save[key],array_to_save))
 
 # Output to file
 for key in final_array_to_save.keys():
@@ -136,17 +136,17 @@ dy=match.group(5)
 
 filename="hydro_info_header_h"
 f = open(filename, "w")
-f.write("const int MUSIC_real_nx ="+str(Nx)+"\n")
-f.write("const int MUSIC_real_ny ="+str(Ny)+"\n")
-f.write("const int MUSIC_real_neta =1\n")
-f.write("const double MUSIC_tau0 = "+str(tau0)+"\n")
-f.write("const double MUSIC_dx = "+str(dx)+"\n")
-f.write("const double MUSIC_dy = "+str(dy)+"\n")
-f.write("const double MUSIC_deta = "+str(0)+"\n")
-f.write("const double MUSIC_dtau = "+str(dtau)+"\n")
-f.write("const bool MUSIC_with_shear_viscosity = false\n")
-f.write("const bool MUSIC_with_bulk_viscosity = false\n")
-f.write("const bool MUSIC_with_rhob = false\n")
-f.write("const bool MUSIC_with_diffusion = false\n")
-f.write("const bool MUSIC_outputBinaryEvolution=false\n")
+f.write("const int MUSIC_real_nx ="+str(Nx)+";\n")
+f.write("const int MUSIC_real_ny ="+str(Ny)+";\n")
+f.write("const int MUSIC_real_neta =1;\n")
+f.write("const double MUSIC_tau0 = "+str(tau0)+";\n")
+f.write("const double MUSIC_dx = "+str(dx)+";\n")
+f.write("const double MUSIC_dy = "+str(dy)+";\n")
+f.write("const double MUSIC_deta = "+str(0)+";\n")
+f.write("const double MUSIC_dtau = "+str(dtau)+";\n")
+f.write("const bool MUSIC_with_shear_viscosity = false;\n")
+f.write("const bool MUSIC_with_bulk_viscosity = false;\n")
+f.write("const bool MUSIC_with_rhob = false;\n")
+f.write("const bool MUSIC_with_diffusion = false;\n")
+f.write("const bool MUSIC_outputBinaryEvolution=false;\n")
 f.close()
