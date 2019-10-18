@@ -8,7 +8,7 @@ hbarc=0.1973
 
 # Fetch all directories corresponding to parameter points
 pre_kompost_output=os.listdir(path="./")
-subdir_regex = re.compile('tIn02.tOut([0-9\.]+).music_init_flowNonLinear_pimunuTransverse.txt')
+subdir_regex = re.compile('.*([0-9\.]+).music_init_flowNonLinear_pimunuTransverse.txt')
 #kompost_output=[(subdir,match.group(1)) for subdir in pre_input_subdirs if match := subdir_regex.match(subdir)]
 
 kompost_output={}
@@ -29,6 +29,21 @@ dtau=tau_list[1]-tau_list[0]
 #print(tau_min)
 #print(tau_max)
 #print(dtau)
+
+# Read header of kompost output to figure out what is the grid size et al
+filename=kompost_output[tau_min]
+f = open(filename, "r")
+kompost_output_header = f.readline()
+f.close()
+
+subdir_regex = re.compile('# tau_in_fm ([0-9\.]+) etamax= 1 xmax= ([0-9]+) ymax= ([0-9]+) deta= 0 dx= ([0-9\.]+) dy= ([0-9\.]+)')
+match=subdir_regex.match(kompost_output_header)
+tau0=match.group(1)
+Nx=match.group(2)
+Ny=match.group(3)
+dx=match.group(4)
+dy=match.group(5)
+
 
 ############################################
 ############ Equations of state ############
@@ -68,7 +83,8 @@ eos_list={
 ########################################################################################
 
 
-final_array_to_save={key:None for key in eos_list.keys()}
+final_array_to_save_old_format={key:None for key in eos_list.keys()}
+final_array_to_save_new_format={key:None for key in eos_list.keys()}
 
 # Loop over time
 for tau in tau_list:
@@ -93,46 +109,65 @@ for tau in tau_list:
 
     zeros=np.zeros_like(vx)
 
-    for key, item in final_array_to_save.items():
+    # New format
+    deta_dummy=0.1
+    volume=float(dx)*float(dy)*deta_dummy*dtau*tau*(zeros+1)
+    eta=zeros
+    Wxx=zeros
+    Wxy=zeros
+    Wxeta=zeros
+    Wyy=zeros
+    Wyeta=zeros
+    pi_b=zeros
+
+
+    for key, item in final_array_to_save_old_format.items():
 
         tmp_T_fct=eos_list[key]
 
         # 
         T=tmp_T_fct(e_dens)
 
-        #final_array_to_save=np.concatenate(final_array_to_save,array_to_save)
-        array_to_save=np.transpose([T,zeros,vx,vy,zeros])
+        # Old format
+        array_to_save_old=np.transpose([T,zeros,vx,vy,zeros])
+
+        # New format
+        # For new file format, save only cells with T>Tref
+        Tref=0.105
+        indices_to_save=T>Tref
+        #volume=dx*dy*deta*dtau*tau, eta, T, ux, uy, ueta, Wxx, Wxy, Wxeta, Wyy,Wyeta, pi_b
+        array_to_save_new=np.transpose([volume, eta, T,ux,uy, ueta, Wxx, Wxy, Wxeta, Wyy,Wyeta, pi_b])
+        array_to_save_new_trimmed=array_to_save_new[indices_to_save,:]
 
         if (item is None):
-            final_array_to_save[key]=array_to_save
+            final_array_to_save_old_format[key]=array_to_save_old
+            final_array_to_save_new_format[key]=array_to_save_new_trimmed
         else:
-            final_array_to_save[key]=np.concatenate((final_array_to_save[key],array_to_save))
+            final_array_to_save_old_format[key]=np.concatenate((final_array_to_save_old_format[key],array_to_save_old))
+            final_array_to_save_new_format[key]=np.concatenate((final_array_to_save_new_format[key],array_to_save_new_trimmed))
 
 # Output to file
-for key in final_array_to_save.keys():
+for key in final_array_to_save_old_format.keys():
 
-    filename="evolution_xyeta_eos_"+key+".dat"
+    to_save=final_array_to_save_old_format[key]
 
-    np.savetxt(filename, final_array_to_save[key])
+    # Old format
+    filename="evolution_xyeta_eos_"+key+"_old_format.dat"
+
+    np.savetxt(filename, to_save)
+
+    # New format
+    to_save=final_array_to_save_new_format[key]
+
+    filename="evolution_xyeta_eos_"+key+"_new_format.dat"
+
+    np.savetxt(filename, final_array_to_save_new_format[key])
 
 
 ###########################################################
 ############ Write header file with useful info ###########
 ###########################################################
 
-# Read header of kompost output to figure out what is the grid size et al
-filename=kompost_output[tau_min]
-f = open(filename, "r")
-kompost_output_header = f.readline()
-f.close()
-
-subdir_regex = re.compile('# tau_in_fm ([0-9\.]+) etamax= 1 xmax= ([0-9]+) ymax= ([0-9]+) deta= 0 dx= ([0-9\.]+) dy= ([0-9\.]+)')
-match=subdir_regex.match(kompost_output_header)
-tau0=match.group(1)
-Nx=match.group(2)
-Ny=match.group(3)
-dx=match.group(4)
-dy=match.group(5)
 
 filename="hydro_info_header_h"
 f = open(filename, "w")
