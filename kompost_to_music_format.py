@@ -8,7 +8,7 @@ hbarc=0.1973
 
 # Fetch all directories corresponding to parameter points
 pre_kompost_output=os.listdir(path="./")
-subdir_regex = re.compile('.*([0-9\.]+).music_init_flowNonLinear_pimunuTransverse.txt')
+subdir_regex = re.compile('.*tOut([0-9\.]+).music_init_flowNonLinear_pimunuTransverse.txt')
 #kompost_output=[(subdir,match.group(1)) for subdir in pre_input_subdirs if match := subdir_regex.match(subdir)]
 
 kompost_output={}
