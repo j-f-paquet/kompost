@@ -136,7 +136,7 @@ for tau in tau_list:
         Tref=0.105
         indices_to_save=T>Tref
         #volume=dx*dy*deta*dtau*tau, eta, T, ux, uy, ueta, Wxx, Wxy, Wxeta, Wyy,Wyeta, pi_b
-        array_to_save_new=np.transpose([volume, eta, T,ux,uy, ueta, Wxx, Wxy, Wxeta, Wyy,Wyeta, pi_b])
+        array_to_save_new=np.transpose([volume, eta, T,ux,uy, tau*ueta, Wxx, Wxy, Wxeta, Wyy,Wyeta, pi_b])
         array_to_save_new_trimmed=array_to_save_new[indices_to_save,:]
 
         if (item is None):
