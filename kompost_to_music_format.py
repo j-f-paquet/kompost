@@ -87,7 +87,8 @@ final_array_to_save_old_format={key:None for key in eos_list.keys()}
 final_array_to_save_new_format={key:None for key in eos_list.keys()}
 
 # Loop over time
-for tau in tau_list:
+# Skip the last time step, which is the same as the hydro initial conditions (avoid doublecounting)
+for tau in tau_list[:-1]:
 
     filename=kompost_output[tau]
 
