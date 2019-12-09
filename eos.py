@@ -30,6 +30,9 @@ cs2=InterpolatedUnivariateSpline(e,p,k=1).derivative(n=1)(e)
 cs2_qcd_fct=InterpolatedUnivariateSpline(T/hbarc,cs2)
 T_qcd_fct=InterpolatedUnivariateSpline(e, T)
 
+#
+p_in_GeVfm3_from_e_in_GeVfm3=InterpolatedUnivariateSpline(e,p)
+cs2_from_e_in_GeVfm3=InterpolatedUnivariateSpline(e,cs2)
 
 #hotQCD=np.loadtxt("hotQCD-EOS.dat")
 #

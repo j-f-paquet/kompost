@@ -1,10 +1,14 @@
 import numpy as np
 import os
 import re
-from eos import T_qcd_fct
+from eos import T_qcd_fct, p_in_GeVfm3_from_e_in_GeVfm3, cs2_from_e_in_GeVfm3
 import configparser
 
 hbarc=0.1973
+
+############################################
+############     Load files     ############
+############################################
 
 # Fetch all directories corresponding to parameter points
 pre_kompost_output=os.listdir(path="./")
@@ -114,12 +118,32 @@ for tau in tau_list[:-1]:
     deta_dummy=0.1
     volume=float(dx)*float(dy)*deta_dummy*dtau*tau*(zeros+1)
     eta=zeros
-    Wxx=zeros
-    Wxy=zeros
-    Wxeta=zeros
-    Wyy=zeros
-    Wyeta=zeros
-    pi_b=zeros
+    pitautau=tmp_data[:,8]
+    pitaux=tmp_data[:,9]
+    pitauy=tmp_data[:,10]
+    pitaueta=tmp_data[:,11]
+    pixx=tmp_data[:,12]
+    pixy=tmp_data[:,13]
+    pixeta=tmp_data[:,14]
+    piyy=tmp_data[:,15]
+    piyeta=tmp_data[:,16]
+    pietaeta=tmp_data[:,17]
+    # Define Pi_b as (epsilon/3-pressure)
+    tmp_pressure=p_in_GeVfm3_from_e_in_GeVfm3(e_dens)
+    Pi_b=(e_dens/3.-tmp_pressure)/hbarc
+
+    eps_plus_P_in_fm=(e_dens+tmp_pressure)/hbarc
+    cs2=cs2_from_e_in_GeVfm3(e_dens)
+
+
+    # For old format
+    pitt = pitautau #pow(cosh(eta),2)*Wtautau + pow(tau*sinh(eta),2)*Wetaeta*pow(tau,-2) + 2*tau*cosh(eta)*sinh(eta)*Wtaueta*pow(tau,-1);
+    pitx = pitaux #cosh(eta)*Wtaux + tau*sinh(eta)*Wxeta*pow(tau,-1);
+    pity = pitauy #cosh(eta)*Wtauy + tau*sinh(eta)*Wyeta*pow(tau,-1);
+    pitz = tau*pitaueta #cosh(eta)*sinh(eta)*Wtautau + tau*( pow(cosh(eta),2) + pow(sinh(eta),2) )*Wtaueta*pow(tau,-1) + tau*tau*cosh(eta)*sinh(eta)*Wetaeta*pow(tau,-2);
+    pixz = tau*pixeta #sinh(eta)*Wtaux + tau*cosh(eta)*Wxeta*pow(tau,-1);
+    piyz = tau*piyeta #sinh(eta)*Wtauy + tau*cosh(eta)*Wyeta*pow(tau,-1);
+    pizz = tau*tau*pietaeta #pow(sinh(eta),2)*Wtautau + pow(tau*cosh(eta),2)*Wetaeta*pow(tau,-2) + 2*tau*cosh(eta)*sinh(eta)*Wtaueta*pow(tau,-1);
 
 
     for key, item in final_array_to_save_old_format.items():
@@ -130,31 +154,47 @@ for tau in tau_list[:-1]:
         T=tmp_T_fct(e_dens)
 
         # Old format
-        array_to_save_old=np.transpose([T,zeros,vx,vy,zeros])
+        array_to_save_old_ideal=np.transpose([T,zeros,vx,vy,zeros])
+        array_to_save_old_shear=np.transpose(np.divide([pitt,pitx,pity,pitz,pixx,pixy,pixz,piyy,piyz,pizz],eps_plus_P_in_fm))
+        array_to_save_old_bulk=np.transpose([Pi_b,eps_plus_P_in_fm,cs2])
 
         # New format
         # For new file format, save only cells with T>Tref
         Tref=0.105
         indices_to_save=T>Tref
-        #volume=dx*dy*deta*dtau*tau, eta, T, ux, uy, ueta, Wxx, Wxy, Wxeta, Wyy,Wyeta, pi_b
-        array_to_save_new=np.transpose([volume, eta, T,ux,uy, tau*ueta, Wxx, Wxy, Wxeta, Wyy,Wyeta, pi_b])
+        #volume=dx*dy*deta*dtau*tau, eta, T, ux, uy, ueta, pixx, pixy, pixeta, piyy,piyeta, pi_b
+        array_to_save_new=np.transpose([volume, eta, T,ux,uy, tau*ueta, pixx/eps_plus_P_in_fm, pixy/eps_plus_P_in_fm, tau*pixeta/eps_plus_P_in_fm, piyy/eps_plus_P_in_fm, tau*piyeta/eps_plus_P_in_fm, Pi_b])
         array_to_save_new_trimmed=array_to_save_new[indices_to_save,:]
 
         if (item is None):
-            final_array_to_save_old_format[key]=array_to_save_old
+            final_array_to_save_old_format[key]={}
+            final_array_to_save_old_format[key]['ideal']=array_to_save_old_ideal
+            final_array_to_save_old_format[key]['shear']=array_to_save_old_shear
+            final_array_to_save_old_format[key]['bulk']=array_to_save_old_bulk
+
             final_array_to_save_new_format[key]=array_to_save_new_trimmed
         else:
-            final_array_to_save_old_format[key]=np.concatenate((final_array_to_save_old_format[key],array_to_save_old))
+            final_array_to_save_old_format[key]['ideal']=np.concatenate((final_array_to_save_old_format[key]['ideal'],array_to_save_old_ideal))
+            final_array_to_save_old_format[key]['shear']=np.concatenate((final_array_to_save_old_format[key]['shear'],array_to_save_old_shear))
+            final_array_to_save_old_format[key]['bulk']=np.concatenate((final_array_to_save_old_format[key]['bulk'],array_to_save_old_bulk))
+
             final_array_to_save_new_format[key]=np.concatenate((final_array_to_save_new_format[key],array_to_save_new_trimmed))
 
 # Output to file
 for key in final_array_to_save_old_format.keys():
 
-    to_save=final_array_to_save_old_format[key]
 
     # Old format
+    to_save=final_array_to_save_old_format[key]['ideal']
     filename="evolution_xyeta_eos_"+key+"_old_format.dat"
+    np.savetxt(filename, to_save)
 
+    to_save=final_array_to_save_old_format[key]['shear']
+    filename="evolution_Wmunu_over_epsilon_plus_P_xyeta_eos_"+key+"_old_format.dat"
+    np.savetxt(filename, to_save)
+
+    to_save=final_array_to_save_old_format[key]['bulk']
+    filename="evolution_bulk_pressure_xyeta_eos_"+key+"_old_format.dat"
     np.savetxt(filename, to_save)
 
     # New format
@@ -180,8 +220,8 @@ f.write("const double MUSIC_dx = "+str(dx)+";\n")
 f.write("const double MUSIC_dy = "+str(dy)+";\n")
 f.write("const double MUSIC_deta = "+str(0)+";\n")
 f.write("const double MUSIC_dtau = "+str(dtau)+";\n")
-f.write("const bool MUSIC_with_shear_viscosity = false;\n")
-f.write("const bool MUSIC_with_bulk_viscosity = false;\n")
+f.write("const bool MUSIC_with_shear_viscosity = true;\n")
+f.write("const bool MUSIC_with_bulk_viscosity = true;\n")
 f.write("const bool MUSIC_with_rhob = false;\n")
 f.write("const bool MUSIC_with_diffusion = false;\n")
 f.write("const bool MUSIC_outputBinaryEvolution=false;\n")
